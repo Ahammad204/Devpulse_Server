@@ -28,7 +28,7 @@ const userLogin = async (req: Request, res: Response) => {
     const { refreshToken , token, user } = result;
 
     res.cookie("refreshToken", refreshToken, {
-      secure: false, 
+      secure: true, 
       httpOnly: true,
       sameSite: "lax",
     });
