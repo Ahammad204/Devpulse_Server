@@ -1,6 +1,7 @@
 import type { Request, Response } from "express";
 import { issueService } from "./issues.service";
 import sendResponse from "../../utility/sendresponse";
+import type { IUser } from "../auth/auth.interface";
 
 const createIssue = async (req: Request, res: Response) => {
   try {
@@ -74,8 +75,56 @@ const getSingleIssue = async (req: Request, res: Response) => {
   }
 };
 
+const updateIssue = async (req: Request, res: Response) => {
+  try {
+    const issueId = parseInt(String(req.params.id), 10);
+    const user = req.user as IUser & { id: number };
+
+    if (isNaN(issueId)) {
+      return sendResponse(res, {
+        statusCode: 400,
+        success: false,
+        message: "Invalid issue ID",
+        data: null,
+      });
+    }
+
+    const result = await issueService.updateIssueIntoDB(
+      issueId,
+      user,
+      req.body
+    );
+
+    if (!result) {
+      return sendResponse(res, {
+        statusCode: 403,
+        success: false,
+        message: "Not allowed to update this issue",
+        data: null,
+      });
+    }
+
+    sendResponse(res, {
+      statusCode: 200,
+      success: true,
+      message: "Issue updated successfully",
+      data: result,
+    });
+  } catch (error: any) {
+    sendResponse(res, {
+      statusCode: 500,
+      success: false,
+      message: error.message || "Something went wrong",
+      error,
+    });
+  }
+};
+
+
+
 export const issueController = {
   createIssue,
   getAllIssues,
   getSingleIssue,
+  updateIssue
 };

@@ -1,4 +1,5 @@
 import { pool } from "../../db";
+import type { IUser } from "../auth/auth.interface";
 import type { IIssue, IIssueQuery } from "./issues.interface";
 
 const createIssueIntoDB = async (payload: IIssue, userId: number) => {
@@ -103,8 +104,77 @@ const getSingleIssueFromDB = async (id: number) => {
   };
 };
 
+const updateIssueIntoDB = async (
+  issueId: number,
+  user: IUser & { id: number },
+  payload: {
+    title?: string;
+    description?: string;
+    type?: "bug" | "feature";
+  },
+) => {
+  const issueResult = await pool.query(`SELECT * FROM issues WHERE id = $1`, [
+    issueId,
+  ]);
+
+  if (issueResult.rows.length === 0) {
+    return null;
+  }
+
+  const issue = issueResult.rows[0];
+
+  const isMaintainer = user.role === "maintainer";
+  const isOwner = issue.reporter_id === user.id;
+  const isOpen = issue.status === "open";
+
+  if (!isMaintainer) {
+    if (!isOwner || !isOpen) {
+      return null;
+    }
+  }
+
+
+  const fields: string[] = [];
+  const values: (string | number)[] = [];
+
+  if (payload.title) {
+    values.push(payload.title);
+    fields.push(`title = $${values.length}`);
+  }
+
+  if (payload.description) {
+    values.push(payload.description);
+    fields.push(`description = $${values.length}`);
+  }
+
+  if (payload.type) {
+    values.push(payload.type);
+    fields.push(`type = $${values.length}`);
+  }
+
+  if (fields.length === 0) {
+    return issue; 
+  }
+
+ 
+  values.push(issueId);
+  const idIndex = values.length;
+
+  const query = `
+    UPDATE issues
+    SET ${fields.join(", ")}, updated_at = NOW()
+    WHERE id = $${idIndex}
+    RETURNING *
+  `;
+
+  const updatedResult = await pool.query(query, values);
+
+  return updatedResult.rows[0];
+};
+
 export const issueService = {
   createIssueIntoDB,
   getAllIssuesFromDB,
   getSingleIssueFromDB,
+  updateIssueIntoDB,
 };
