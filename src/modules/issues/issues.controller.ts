@@ -92,7 +92,7 @@ const updateIssue = async (req: Request, res: Response) => {
     const result = await issueService.updateIssueIntoDB(
       issueId,
       user,
-      req.body
+      req.body,
     );
 
     if (!result) {
@@ -121,10 +121,61 @@ const updateIssue = async (req: Request, res: Response) => {
 };
 
 
+const deleteIssue = async (req: Request, res: Response) => {
+  try {
+    const issueId = parseInt(String(req.params.id), 10);
+
+    if (isNaN(issueId)) {
+      return sendResponse(res, {
+        statusCode: 400,
+        success: false,
+        message: "Invalid issue ID",
+        data: null,
+      });
+    }
+
+    const user = req.user;
+
+    if (!user) {
+      return sendResponse(res, {
+        statusCode: 401,
+        success: false,
+        message: "Unauthorized",
+        data: null,
+      });
+    }
+
+    const result = await issueService.deleteIssueFromDB(issueId, user);
+
+    if (!result) {
+      return sendResponse(res, {
+        statusCode: 403,
+        success: false,
+        message: "Only maintainer can delete issues",
+        data: null,
+      });
+    }
+
+    sendResponse(res, {
+      statusCode: 200,
+      success: true,
+      message: "Issue deleted successfully",
+      data: null,
+    });
+  } catch (error: any) {
+    sendResponse(res, {
+      statusCode: 500,
+      success: false,
+      message: error.message || "Something went wrong",
+      error,
+    });
+  }
+};
 
 export const issueController = {
   createIssue,
   getAllIssues,
   getSingleIssue,
-  updateIssue
+  updateIssue,
+  deleteIssue
 };

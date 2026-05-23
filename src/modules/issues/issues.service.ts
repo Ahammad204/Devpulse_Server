@@ -1,3 +1,4 @@
+import type { JwtPayload } from "jsonwebtoken";
 import { pool } from "../../db";
 import type { IUser } from "../auth/auth.interface";
 import type { IIssue, IIssueQuery } from "./issues.interface";
@@ -172,9 +173,40 @@ const updateIssueIntoDB = async (
   return updatedResult.rows[0];
 };
 
+
+const deleteIssueFromDB = async (
+  issueId: number,
+  user: JwtPayload
+) => {
+  
+  if (user.role !== "maintainer") {
+    return null;
+  }
+
+  const issueResult = await pool.query(
+    `SELECT * FROM issues WHERE id = $1`,
+    [issueId]
+  );
+
+  if (issueResult.rows.length === 0) {
+    throw new Error("Issue not found");
+  }
+
+  
+  await pool.query(
+    `DELETE FROM issues WHERE id = $1`,
+    [issueId]
+  );
+
+  return true;
+};
+
+
+
 export const issueService = {
   createIssueIntoDB,
   getAllIssuesFromDB,
   getSingleIssueFromDB,
   updateIssueIntoDB,
+  deleteIssueFromDB
 };
