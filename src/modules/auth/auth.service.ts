@@ -59,6 +59,7 @@ const loginUserIntoDB = async (payload: {
 
   return {
     token: accessToken,
+    refreshToken,
     user,
   };
 };
@@ -102,7 +103,7 @@ const generateFreshToken = async (token: string) => {
   return { accessToken };
 };
 
-export const userService = {
+export const authService = {
   createUserIntoDB,
   loginUserIntoDB,
   generateFreshToken
