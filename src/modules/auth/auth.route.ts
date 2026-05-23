@@ -9,4 +9,4 @@ router.post("/login", authController.userLogin);
 router.post("/refresh-token", authController.refreshToken);
 
 
-export const userRoute = router;
+export const authRoute = router;
