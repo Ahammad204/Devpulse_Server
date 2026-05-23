@@ -1,8 +1,6 @@
-
 import type { Request, Response } from "express";
 import { issueService } from "./issues.service";
 import sendResponse from "../../utility/sendresponse";
-
 
 const createIssue = async (req: Request, res: Response) => {
   try {
@@ -45,7 +43,39 @@ const getAllIssues = async (req: Request, res: Response) => {
   }
 };
 
+const getSingleIssue = async (req: Request, res: Response) => {
+  try {
+    const id = Number(req.params.id);
+
+    const result = await issueService.getSingleIssueFromDB(id);
+
+    if (!result) {
+      return sendResponse(res, {
+        statusCode: 404,
+        success: false,
+        message: "Issue not found",
+        data: null,
+      });
+    }
+
+    sendResponse(res, {
+      statusCode: 200,
+      success: true,
+      message: "Issue retrieved successfully",
+      data: result,
+    });
+  } catch (error: any) {
+    sendResponse(res, {
+      statusCode: 500,
+      success: false,
+      message: error.message || "Something went wrong",
+      error,
+    });
+  }
+};
+
 export const issueController = {
   createIssue,
   getAllIssues,
+  getSingleIssue,
 };

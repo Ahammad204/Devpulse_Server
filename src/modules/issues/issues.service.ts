@@ -16,8 +16,6 @@ const createIssueIntoDB = async (payload: IIssue, userId: number) => {
   return result.rows[0];
 };
 
-
-
 const getAllIssuesFromDB = async (queryParams: IIssueQuery) => {
   let query = `SELECT * FROM issues`;
   const conditions: string[] = [];
@@ -25,29 +23,24 @@ const getAllIssuesFromDB = async (queryParams: IIssueQuery) => {
 
   const { sort = "newest", type, status } = queryParams;
 
-
   if (type) {
     values.push(type);
     conditions.push(`type = $${values.length}`);
   }
-
 
   if (status) {
     values.push(status);
     conditions.push(`status = $${values.length}`);
   }
 
- 
   if (conditions.length > 0) {
     query += " WHERE " + conditions.join(" AND ");
   }
 
-  
   query +=
     sort === "oldest"
       ? " ORDER BY created_at ASC"
       : " ORDER BY created_at DESC";
-
 
   const issueResult = await pool.query(query, values);
   const issues = issueResult.rows;
@@ -56,22 +49,18 @@ const getAllIssuesFromDB = async (queryParams: IIssueQuery) => {
     return [];
   }
 
-  
   const reporterIds = [...new Set(issues.map((i) => i.reporter_id))];
 
- 
   const userResult = await pool.query(
     `SELECT id, name, role FROM users WHERE id = ANY($1)`,
-    [reporterIds]
+    [reporterIds],
   );
 
-  
   const userMap = new Map();
   userResult.rows.forEach((user) => {
     userMap.set(user.id, user);
   });
 
- 
   return issues.map((issue) => ({
     id: issue.id,
     title: issue.title,
@@ -84,9 +73,38 @@ const getAllIssuesFromDB = async (queryParams: IIssueQuery) => {
   }));
 };
 
+const getSingleIssueFromDB = async (id: number) => {
+  const issueResult = await pool.query(`SELECT * FROM issues WHERE id = $1`, [
+    id,
+  ]);
 
+  if (issueResult.rows.length === 0) {
+    return null;
+  }
+
+  const issue = issueResult.rows[0];
+
+  const userResult = await pool.query(
+    `SELECT id, name, role FROM users WHERE id = $1`,
+    [issue.reporter_id],
+  );
+
+  const reporter = userResult.rows[0] || null;
+
+  return {
+    id: issue.id,
+    title: issue.title,
+    description: issue.description,
+    type: issue.type,
+    status: issue.status,
+    reporter,
+    created_at: issue.created_at,
+    updated_at: issue.updated_at,
+  };
+};
 
 export const issueService = {
   createIssueIntoDB,
-  getAllIssuesFromDB
+  getAllIssuesFromDB,
+  getSingleIssueFromDB,
 };
